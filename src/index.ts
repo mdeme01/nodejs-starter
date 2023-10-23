@@ -1,13 +1,12 @@
-import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcrypt';
 import dotenv from 'dotenv';
 import express from 'express';
+import { verifyToken } from './middleware/verify-token';
+import { prisma } from './prisma/client';
+import { auth } from './routes/auth';
 
 dotenv.config();
 
 const server_port = Number(process.env['SERVER_PORT'] || 8080);
-
-const prisma = new PrismaClient();
 
 const main = async (): Promise<void> => {
   const app = express();
@@ -15,36 +14,14 @@ const main = async (): Promise<void> => {
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
 
+  app.use('/auth', auth);
+
   app.get('/', (_req, res) => {
     res.status(200).send({ data: 'Hello world!' });
   });
 
-  app.post('/user/create', async (req, res) => {
-    const { name, email, password } = req.body as {
-      name: string;
-      email: string;
-      password: string;
-    };
-
-    try {
-      const password_hash = await bcrypt.hash(password, 10);
-
-      await prisma.users.create({
-        data: {
-          name,
-          email,
-          password_hash,
-        },
-      });
-
-      res.status(201).send({
-        message: 'User created.',
-      });
-    } catch {
-      res.status(400).send({
-        message: 'Error creating user.',
-      });
-    }
+  app.get('/protected', verifyToken, (_req, res) => {
+    res.status(200).send({ message: 'Welcome!' });
   });
 
   app.listen(server_port, () =>

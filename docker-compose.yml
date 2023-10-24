@@ -1,12 +1,35 @@
-version: '3'
-
 services:
   postgres:
     image: postgres:latest
     container_name: postgres_db
     environment:
-      POSTGRES_DB: postgres
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
+      POSTGRES_DB: '${POSTGRES_DB}'
+      POSTGRES_USER: '${POSTGRES_USER}'
+      POSTGRES_PASSWORD: '${POSTGRES_PASSWORD}'
+    volumes:
+      - 'postgres_data:/var/lib/postgres'
     ports:
       - '5432:5432'
+  server:
+    image: node:18-alpine
+    container_name: node_server
+    environment:
+      SERVER_PORT: '${SERVER_PORT}'
+      DATABASE_URL: '${DATABASE_URL}'
+      ACCESS_TOKEN_SECRET: '${ACCESS_TOKEN_SECRET}'
+    command: >
+      sh -c "npm run prisma:migrate init &&
+             npm run prisma:generate &&
+             npm install &&
+             npm run build &&
+             npm run start"
+    working_dir: /app
+    volumes:
+      - ./:/app
+    ports:
+      - '8080:8080'
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:

@@ -1,10 +1,10 @@
-import dotenv from 'dotenv';
 import { NextFunction, Request, Response } from 'express';
-import jwt from 'jsonwebtoken';
-
-dotenv.config();
-
-const accessTokenSecret = process.env['ACCESS_TOKEN_SECRET'] || '';
+import {
+  generateAccessToken,
+  generateRefreshToken,
+  verifyAccessToken,
+  verifyRefreshToken,
+} from '../jwt/utils';
 
 export const verifyToken = (
   req: Request,
@@ -12,19 +12,47 @@ export const verifyToken = (
   next: NextFunction
 ) => {
   const authHeader = req.headers['authorization'];
-  const token = (authHeader && authHeader.split(' ')[1]) || '';
+  const refreshCookie = req.cookies['refreshToken'] as string | undefined;
 
-  if (!token) {
-    res.sendStatus(401);
+  const accessToken = (authHeader && authHeader.split(' ')[1]) || '';
+  const refreshToken = refreshCookie || '';
+
+  if (!accessToken) {
+    return res.sendStatus(401);
   }
 
-  jwt.verify(token, accessTokenSecret, (err, payload) => {
-    if (err) {
-      res.status(403).json({ err });
+  verifyAccessToken(accessToken, (accessTokenErr, aTokenPayload) => {
+    if (accessTokenErr) {
+      verifyRefreshToken(refreshToken, (refreshTokenErr, rTokenPayload) => {
+        if (refreshTokenErr) {
+          return res.sendStatus(403);
+        } else {
+          const { name, email } = rTokenPayload as {
+            name: string;
+            email: string;
+          };
+
+          const newAccessToken = generateAccessToken(name, email);
+          const newRefreshToken = generateRefreshToken(name, email);
+
+          res.setHeader('Authorization', `Bearer ${newAccessToken}`);
+          res.cookie('refreshToken', newRefreshToken, {
+            maxAge: 1000 * 60 * 60 * 24,
+            httpOnly: true,
+          });
+
+          req.user = { name, email };
+          return next();
+        }
+      });
     } else {
-      const { name, email } = payload as { name: string; email: string };
+      const { name, email } = aTokenPayload as {
+        name: string;
+        email: string;
+      };
+
       req.user = { name, email };
-      next();
+      return next();
     }
   });
 };

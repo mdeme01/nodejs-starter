@@ -1,3 +1,4 @@
+import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 import express from 'express';
 import { verifyToken } from './middleware/verify-token';
@@ -11,17 +12,18 @@ const server_port = Number(process.env['SERVER_PORT'] || 8080);
 const main = async (): Promise<void> => {
   const app = express();
 
+  app.use(cookieParser());
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
 
   app.use('/auth', auth);
 
   app.get('/', (_req, res) => {
-    res.status(200).send({ data: 'Hello world!' });
+    return res.status(200).json({ message: 'Welcome Anonymus!' });
   });
 
-  app.get('/protected', verifyToken, (_req, res) => {
-    res.status(200).send({ message: 'Welcome!' });
+  app.get('/protected', verifyToken, (req, res) => {
+    return res.status(200).json({ message: `Welcome ${req.user.name}!` });
   });
 
   app.listen(server_port, () =>

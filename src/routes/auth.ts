@@ -33,6 +33,7 @@ auth.post('/register', async (req, res) => {
         name,
         email,
         password_hash,
+        role: 'user',
       },
     });
 
@@ -62,8 +63,8 @@ auth.post('/login', async (req, res) => {
       return res.sendStatus(401);
     }
 
-    const accessToken = generateAccessToken(user.name, user.email);
-    const refreshToken = generateRefreshToken(user.name, user.email);
+    const accessToken = generateAccessToken(user.name, user.email, user.role);
+    const refreshToken = generateRefreshToken(user.name, user.email, user.role);
 
     res.setHeader('Authorization', `Bearer ${accessToken}`);
     res.cookie('refreshToken', refreshToken, {

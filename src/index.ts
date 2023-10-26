@@ -1,6 +1,7 @@
 import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 import express from 'express';
+import { verifyAdmin } from './middleware/verify-admin';
 import { verifyToken } from './middleware/verify-token';
 import { prisma } from './prisma/client';
 import { auth } from './routes/auth';
@@ -23,6 +24,10 @@ const main = async (): Promise<void> => {
   });
 
   app.get('/protected', verifyToken, (req, res) => {
+    return res.status(200).json({ message: `Welcome ${req.user.name}!` });
+  });
+
+  app.get('/admin', verifyToken, verifyAdmin, (req, res) => {
     return res.status(200).json({ message: `Welcome ${req.user.name}!` });
   });
 

@@ -11,5 +11,6 @@ model Users {
   id            String @id @default(uuid())
   name          String
   email         String
+  role          String @default("user")
   password_hash String
 }

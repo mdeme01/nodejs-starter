@@ -27,13 +27,14 @@ export const verifyToken = (
         if (refreshTokenErr) {
           return res.sendStatus(403);
         } else {
-          const { name, email } = rTokenPayload as {
+          const { name, email, role } = rTokenPayload as {
             name: string;
             email: string;
+            role: string;
           };
 
-          const newAccessToken = generateAccessToken(name, email);
-          const newRefreshToken = generateRefreshToken(name, email);
+          const newAccessToken = generateAccessToken(name, email, role);
+          const newRefreshToken = generateRefreshToken(name, email, role);
 
           res.setHeader('Authorization', `Bearer ${newAccessToken}`);
           res.cookie('refreshToken', newRefreshToken, {
@@ -41,17 +42,18 @@ export const verifyToken = (
             httpOnly: true,
           });
 
-          req.user = { name, email };
+          req.user = { name, email, role };
           return next();
         }
       });
     } else {
-      const { name, email } = aTokenPayload as {
+      const { name, email, role } = aTokenPayload as {
         name: string;
         email: string;
+        role: string;
       };
 
-      req.user = { name, email };
+      req.user = { name, email, role };
       return next();
     }
   });

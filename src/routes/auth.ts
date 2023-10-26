@@ -19,6 +19,13 @@ auth.post('/register', async (req, res) => {
       return res.sendStatus(400);
     }
 
+    const users = await prisma.users.findMany();
+    const emails = users.map((user) => user.email);
+
+    if (emails.includes(email)) {
+      return res.status(400).json({ error: 'Email already exists!' });
+    }
+
     const password_hash = await bcrypt.hash(password, 10);
 
     await prisma.users.create({
